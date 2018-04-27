@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation avec GameFrame</title>
+    <style>
+        body {
+            background-color: #eee;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        main {
+            position: relative;
+            background-color: #fff;
+            width: 420px;
+            height: 420px;
+            top: 160px;
+            border: 2px solid white;
+            border-radius: 20px;
+            padding: 10px;
+            box-shadow: 0px 0px 10px #aaa;
+            align-self: center;
+            /*display: flex;
+            flex-direction: column;
+            justify-content: space-around;*/
+        }
+
+        #backgroundCanvas {
+            position: absolute;
+            padding: 10px;
+            left: 10px;
+            top: 10px;
+            z-index: 0;
+            border: 2px solid white;
+            border-radius: 20px;
+            align-self: center;
+            /*display: flex;
+            flex-direction: column;
+            justify-content: space-around;*/
+        }
+
+        #myCanvas {
+            position: absolute;
+            padding: 10px;
+            left: 10px;
+            top: 10px;
+            z-index: 1;
+            align-self: center;
+            /*display: flex;
+            flex-direction: column;
+            justify-content: space-around;*/
+        }
+
+    </style>
+</head>
+
+<body>
+    <main>
+        <div id="resultat"></div>
+        <canvas id="backgroundCanvas" height="400" width="400"></canvas>
+        <canvas id="myCanvas" width="400" height="400"></canvas>
+    </main>
+    <script>
+        var myCanvas, ctx, ctx2,
+            EastWest = "W",
+            canvasWidth, canvasHeight,
+            largeurMax = 50,
+            hauteurMax = 50,
+            imgW = 'paper_boat_TWest.png',
+            imgE = 'paper_boat_TEast.png',
+            img;
+
+        var numberOfBateaux = 4;
+        var bateauArray = [];
+
+        // constructor function
+        function Bateau(x, y, angle, v, diameter, image) {
+            this.x = x;
+            this.y = y;
+            this.angle = 15;
+            this.v = v;
+            this.radius = diameter / 2;
+            this.image = image; //"paper_boat_TWest.png";
+
+            this.draw = function() {
+                img.src = this.image;
+                ctx.drawImage(img, this.x, this.y, largeurMax, hauteurMax);
+                ctx.fill();
+            };
+
+            this.move = function() {
+                // add horizontal increment to the x pos
+                // add vertical increment to the y pos
+                this.x += this.v * Math.cos(this.angle) * 0.7;
+                this.y += this.v * Math.sin(this.angle) * 0.7;
+            };
+        }
+
+        function createBateaux(numberOfBateaux) {
+            var bateau;
+            for (var i = 0; i < numberOfBateaux; i++) {
+                // Create a bateau with random position and speed. 
+                // You can change the radius
+                bateau = new Bateau(canvasWidth * Math.random(),
+                    canvasHeight * Math.random(),
+                    (2 * Math.PI) * Math.random(),
+                    (10 * Math.random()) - 5,
+                    30, "paper_boat_TWest.png");
+                //alert("vitesse du bateau " + bateau.v);
+                // We add it to the array
+                bateauArray.push(bateau);
+            }
+            //alert("bateaux created " + bateauArray.length);
+        }
+
+        function init() {
+            myCanvas = document.querySelector("#myCanvas");
+            backgroundCanvas = document.querySelector("#backgroundCanvas");
+            //document.getElementById('resultat').innerHTML += backgroundCanvas.compareDocumentPosition(myCanvas);
+            ctx = myCanvas.getContext('2d');
+            ctx2 = backgroundCanvas.getContext('2d');
+            canvasWidth = myCanvas.width;
+            canvasHeight = myCanvas.height;
+            img = new Image();
+            var myBackground = new Image();
+            myBackground.src = "water.png";
+            myBackground.onload = function() {
+                ctx2.drawImage(myBackground, 0, 0);
+            }
+            //creer les bateaux
+            createBateaux(numberOfBateaux);
+        }
+
+        function testCollisionWithWalls(bateau) {
+            // left
+            if (bateau.x < 0 - bateau.radius) { //0) { //bateau.radius) {
+                bateau.image = imgW;
+                bateau.x = bateau.radius;
+                bateau.angle = -bateau.angle + Math.PI;
+                //Hummm bizarre d'ajouter pi.
+                //bruitCollision.play();
+            }
+            // right
+            else if (bateau.x > canvasWidth - (bateau.radius)) {
+                bateau.image = imgE;
+                bateau.x = canvasWidth - (bateau.radius);
+                bateau.angle = -bateau.angle + Math.PI;
+                //bruitCollision.play();
+            }
+            // up
+            if (bateau.y < 0 - bateau.radius) {
+                bateau.y = bateau.radius;
+                bateau.angle = -bateau.angle;
+                //bruitCollision.play();
+            }
+            // down
+            else if (bateau.y > canvasHeight - (bateau.radius)) {
+                bateau.y = canvasHeight - (bateau.radius);
+                bateau.angle = -bateau.angle;
+                //bruitCollision.play();
+            }
+        }
+
+        /*
+                //VERIFIER COLLISION
+                //Si les valeurs des x et les valeurs des y des 2 bateaux sont plus proches que la somme des 2 rayons, alors les bateaux collisionnent.
+                function testCollisionWithBoats(bateau) {
+                    "use strict";
+                    var i = 0,
+                        indexCollisions = [],
+                        collision = ""
+                    leBateau;
+
+                    for (i = 0; i < bateauArray.length; i++) {
+                        leBateau = bateauArray[i];
+                        if (((bateau.x + leBateau.x) < (bateau.radius + leBateau.radius)) && ((bateau.y + leBateau.y) < (bateau.radius + leBateau.radius))) {
+                            indexCollisions += i;
+                            //bruitCollision.play();
+                        }
+                    }
+
+                }
+        */
+        var GF = function() {
+            // vars for counting frames/s, used by the measureFPS function
+            var frameCount = 0;
+            var lastTime;
+            var fpsContainer;
+            var fps;
+
+            var measureFPS = function(newTime) {
+
+                // test for the very first invocation
+                if (lastTime === undefined) {
+                    lastTime = newTime;
+                    return;
+                }
+
+                //calculate the difference between last & current frame
+                var diffTime = newTime - lastTime;
+
+                if (diffTime >= 1000) {
+                    fps = frameCount;
+                    frameCount = 0;
+                    lastTime = newTime;
+                }
+
+                //and display it in an element we appended to the 
+                // document in the start() function
+                fpsContainer.innerHTML = 'FPS: ' + fps;
+                frameCount++;
+            };
+
+            var mainLoop = function() {
+                //main function, called each frame 
+
+                measureFPS(+(new Date()));
+
+                // call the animation loop every 1/60th of second
+                // call with an error in the code
+                //var img = new Image();
+                //img.onerror = mainLoop; //pourquoi on error... biz va creer une loop.... 
+                //img.src = 'data:image/png,' + Math.random();
+
+                var aBateau;
+                // clear the canvas
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+                // for each bateau in the array
+                for (var i = 0; i < bateauArray.length; i++) {
+                    aBateau = bateauArray[i];
+
+                    // 1) move the bateau
+                    aBateau.move();
+
+                    // 2) test if the bateau collides with a wall
+                    testCollisionWithWalls(aBateau);
+
+                    //3) draw the bateau
+                    aBateau.draw();
+                    //testCollisionWithBoats(aBateau);
+                }
+
+                //Il faut refaire ce request a chaque loop
+                requestAnimationFrame(mainLoop);
+            };
+
+            var start = function() {
+                // adds a div for displaying the fps value
+                fpsContainer = document.createElement('div');
+                document.body.appendChild(fpsContainer);
+
+                requestAnimationFrame(mainLoop);
+            };
+
+            //our GameFramework returns a public API visible from outside its scope
+            return {
+                start: start
+            };
+        };
+
+        document.onreadystatechange = function() {
+            "use strict";
+            if (document.readyState === "complete") {
+                init();
+                var game = new GF();
+                game.start(); //une seule fonction publique: start
+            }
+        };
+
+    </script>
+
+
+    <audio id="bruitCollision">
+         <source src="bip.mp3" type="audio/mpeg">
+         Your browser does not support the audio element.
+    </audio>
+
+</body>
+
+</html>
